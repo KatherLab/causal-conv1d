@@ -1,12 +1,7 @@
 [build-system]
-requires = [
-    "setuptools>=61.0",
-    "wheel", 
-    "torch>=2.6.0",  # Minimum version that supports the features used
-    "packaging",
-    "ninja"
-]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel", "packaging", "ninja"]
+build-backend = "causal_conv1d_build"
+backend-path = ["."]
 
 [project]
 name = "causal-conv1d"
@@ -17,9 +12,9 @@ license = {text = "BSD-3-Clause"}
 authors = [{name = "Tri Dao", email = "tri@tridao.me"}]
 requires-python = ">=3.9"
 dependencies = [
-    "torch>=2.6.0",  # Flexible constraint
-    "packaging",
-    "ninja",
+  "torch>=2.6.0",  # runtime dep, not a build-system dep
+  "packaging",
+  "ninja",
 ]
 
 [project.urls]
