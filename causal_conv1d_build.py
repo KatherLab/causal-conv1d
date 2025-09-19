@@ -28,27 +28,14 @@ def _safe_import_torch():
     except Exception:
         return None
 
+# in causal_conv1d_build.py
 def _get_platform_tag():
-    """
-    Return a platform tag matching upstream wheel assets.
-    Adjust as needed if upstream changes naming.
-    """
     import platform
     m = platform.machine().lower()
     if sys.platform.startswith("linux"):
+        # Upstream uses 'linux_x86_64' and 'linux_aarch64'
         if m in ("x86_64", "amd64"):
-            return "manylinux2014_x86_64"
-        if m in ("aarch64", "arm64"):
-            return "manylinux2014_aarch64"
-        # Fallback
-        return "manylinux2014_x86_64"
-    elif sys.platform == "darwin":
-        # macOS 11+ for universal/arm64 wheels is common
-        if m in ("arm64", "aarch64"):
-            return "macosx_11_0_arm64"
-        return "macosx_10_13_x86_64"
-    elif sys.platform == "win32":
-        return "win_amd64"
+            return "linux_x86_64"
     raise RuntimeError(f"Unsupported platform: {sys.platform} {m}")
 
 def _compute_upstream_filename(torch, version_str):
