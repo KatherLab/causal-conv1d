@@ -6,6 +6,7 @@ import tempfile
 import urllib.request
 import urllib.error
 from pathlib import Path
+import zipfile
 from packaging.version import parse, Version
 
 # Delegate all other hooks to setuptools' backend
@@ -127,6 +128,47 @@ def _read_version_from_package():
     ver = ast.literal_eval(m.group(1))
     local = os.environ.get("CAUSAL_CONV1D_LOCAL_VERSION")
     return f"{ver}+{local}" if local else str(ver)
+
+
+def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
+    """
+    Ensure the metadata version matches the wheel we'll return in build_wheel().
+    We try to download the upstream wheel first; if successful, we extract its
+    .dist-info directory to metadata_directory and return that folder name.
+    Otherwise, fall back to setuptools' default behavior.
+    """
+    if FORCE_BUILD:
+        # We'll build from source; setuptools will keep version consistent.
+        return _orig.prepare_metadata_for_build_wheel(metadata_directory, config_settings)
+
+    pkg_version = _read_version_from_package()
+    tmpdir = tempfile.mkdtemp()
+    try:
+        wheel_name = _download_upstream_wheel(pkg_version, tmpdir)
+        if wheel_name:
+            wheel_path = Path(tmpdir) / wheel_name
+            with zipfile.ZipFile(wheel_path) as zf:
+                # Find the *.dist-info root inside the wheel
+                distinfos = sorted(
+                    {n.split("/")[0] for n in zf.namelist() if n.endswith(".dist-info/METADATA")}
+                )
+                if not distinfos:
+                    # Unexpected; fall back
+                    return _orig.prepare_metadata_for_build_wheel(metadata_directory, config_settings)
+                distinfo_root = distinfos[0]
+                # Extract only that folder to the metadata dir
+                members = [m for m in zf.namelist() if m.startswith(distinfo_root)]
+                zf.extractall(metadata_directory, members)
+                # Return the dist-info directory name (per PEP 517)
+                return distinfo_root
+        # If we couldn’t get a wheel, fall back
+        return _orig.prepare_metadata_for_build_wheel(metadata_directory, config_settings)
+    finally:
+        try:
+            shutil.rmtree(tmpdir)
+        except Exception:
+            pass
+
 
 # ---- PEP 517 hook override ----
 def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
