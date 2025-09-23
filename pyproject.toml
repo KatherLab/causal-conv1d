@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "packaging", "ninja", "torch"]
+requires = ["setuptools>=61.0", "wheel", "packaging", "ninja"]
 build-backend = "causal_conv1d_build"
 backend-path = ["."]
 
